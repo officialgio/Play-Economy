@@ -1,5 +1,7 @@
 # Play-Economy
-A project showcasing a player transaction platform. This project is currently being developed and the current images showcase is what's currently developed thus far. This project is on the works to be released in production in the Cloud. 
+A project showcasing a player transaction platform. The project contains multiple microservices that allow this platform to work optimally together. This project is currently being developed and the current images showcase is what's currently developed thus far. This project is on the works to be released in production in the Cloud. 
+
+There's REST APIs for each service if testing via Postman. The actual workflow is through the state machine - where it distributes messages to the rest of the services via a message broker.
 
 
 
