@@ -51,3 +51,8 @@ There's REST APIs for each service if testing via Postman. The actual workflow i
 <p align="center">
     <img width="600" src="./assets/main3.png">
 </p>
+
+# REST APIs
+<p align="center">
+    <img width="600" src="./assets/postman.png">
+</p>
