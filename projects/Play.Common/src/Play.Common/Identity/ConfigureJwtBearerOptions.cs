@@ -14,6 +14,10 @@ namespace Play.Common.Identity;
 /// </summary>
 public class ConfigureJwtBearerOptions : IConfigureNamedOptions<JwtBearerOptions>
 {
+    private const string AccessTokenParameter = "access_token";
+
+    private const string MessageHubPath = "/messageHub";
+
     /// <summary>
     /// Have an instance of configuration to get Selections respectively.
     /// </summary>
@@ -41,6 +45,24 @@ public class ConfigureJwtBearerOptions : IConfigureNamedOptions<JwtBearerOptions
             {
                 NameClaimType = "name",
                 RoleClaimType = "role"
+            };
+
+
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    // received from SignalR Communication
+                    var accessToken = context.Request.Query[AccessTokenParameter];
+                    var path = context.HttpContext.Request.Path;
+
+                    // the message must of came from the right hub path
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(MessageHubPath))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
             };
         }
     }

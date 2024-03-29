@@ -4,6 +4,7 @@ using MassTransit;
 using Play.Identity.Contracts;
 using Play.Inventory.Contracts;
 using Play.Trading.Service.Activities;
+using Play.Trading.Service.SignalR;
 
 namespace Play.Trading.Service.StateMachines;
 
@@ -12,6 +13,8 @@ namespace Play.Trading.Service.StateMachines;
 /// </summary>
 public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
 {
+	private readonly MessageHub hub;
+
 	public State Accepted { get; }
 	public State ItemsGranted { get; }
 	public State Completed { get; }
@@ -32,7 +35,7 @@ public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
 	public Event<Fault<DebitGil>> DebitGilFaulted { get; }
 
 
-	public PurchaseStateMachine()
+	public PurchaseStateMachine(MessageHub hub)
 	{
 		// Track the state
 		InstanceState(state => state.CurrentState);
@@ -43,6 +46,7 @@ public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
 		ConfigureItemsGranted();
 		ConfigureFaulted();
 		ConfigureCompleted();
+		this.hub = hub;
 	}
 
 	// MassTransit will make use of any necessary events in this method.
@@ -89,6 +93,7 @@ public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
 						context.Instance.LastUpdated = DateTimeOffset.Now;
 					})
 					.TransitionTo(Faulted))
+					.ThenAsync(async context => await hub.SendStatusAsync(context.Instance)) // let the client know
 		);
 	}
 
@@ -115,6 +120,7 @@ public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
 					context.Instance.LastUpdated = DateTimeOffset.Now;
 				})
 				.TransitionTo(Faulted)
+				.ThenAsync(async context => await hub.SendStatusAsync(context.Instance))  // let the client know
 			);
 	}
 
@@ -128,7 +134,8 @@ public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
 				{
 					context.Instance.LastUpdated = DateTimeOffset.Now;
 				})
-				.TransitionTo(Completed), // Once Identity sends GilDebit successfully = Done!
+				.TransitionTo(Completed) // Once Identity sends GilDebit successfully = Done!
+				.ThenAsync(async context => await hub.SendStatusAsync(context.Instance)),  // let the client know
 			When(DebitGilFaulted) // If something goes wrong, we must revert/tell the service to subtract
 				.Send(context => new SubtractItems( // Inventory will handle this
 					context.Instance.UserId,
@@ -142,6 +149,7 @@ public class PurchaseStateMachine : MassTransitStateMachine<PurchaseState>
 					context.Instance.LastUpdated = DateTimeOffset.Now;
 				})
 				.TransitionTo(Faulted)
+				.ThenAsync(async context => await hub.SendStatusAsync(context.Instance))  // let the client know
 		);
 	}
 

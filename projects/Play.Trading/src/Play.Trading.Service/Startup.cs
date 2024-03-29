@@ -1,19 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using GreenPipes;
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Play.Common.Identity;
 using Play.Common.MassTransit;
@@ -24,6 +19,7 @@ using Play.Inventory.Contracts;
 using Play.Trading.Service.Entities;
 using Play.Trading.Service.Exceptions;
 using Play.Trading.Service.Settings;
+using Play.Trading.Service.SignalR;
 using Play.Trading.Service.StateMachines;
 
 namespace Play.Trading.Service
@@ -62,6 +58,11 @@ namespace Play.Trading.Service
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Play.Trading.Service", Version = "v1" });
             });
+
+            // Register SignalR
+            services.AddSingleton<IUserIdProvider, UserIdProvider>()
+                    .AddSingleton<MessageHub>()
+                    .AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -78,7 +79,8 @@ namespace Play.Trading.Service
                 {
                     builder.WithOrigins(Configuration[AllowedOriginSetting])
                         .AllowAnyHeader()
-                        .AllowAnyMethod();
+                        .AllowAnyMethod()
+                        .AllowCredentials(); // For SignalR purpose
                 });
             }
 
@@ -93,6 +95,7 @@ namespace Play.Trading.Service
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<MessageHub>("/messagehub"); // SignalR Hub communication endpoint
             });
         }
 
