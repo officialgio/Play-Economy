@@ -3,7 +3,7 @@ A project showcasing a player transaction platform. The project contains multipl
 
 There's REST APIs for each service if testing via Postman. The actual workflow is through the state machine - where it distributes messages to the rest of the services via a message broker.
 
-
+Link to the prod multirepo: [Link](https://github.com/play-economy-microservices)
 
 # Design
 <p align="center">
